@@ -12,7 +12,7 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 @javax.ws.rs.Path("/intern")
-public class SampleRestPlugin {
+public class MarcdeliveryRestPlugin {
     
     /**
      * This sample method to allow the upload of JSON data via POST
