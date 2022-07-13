@@ -15,7 +15,6 @@ import lombok.Data;
 
 public class FileListResponse {
 
-    //    @XmlElementWrapper
     @XmlElement(name = "file")
     private List<String> files;
 }
