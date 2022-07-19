@@ -5,25 +5,35 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
+import javax.ws.rs.POST;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
+import org.goobi.beans.LogEntry;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
+import org.goobi.production.enums.LogType;
 
+import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.StorageProvider;
+import de.sub.goobi.helper.enums.StepStatus;
+import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.persistence.managers.ProcessManager;
+import de.sub.goobi.persistence.managers.StepManager;
 import lombok.extern.log4j.Log4j2;
 import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
@@ -41,11 +51,23 @@ public class MarcDeliveryRestPlugin {
         <method name="get">
             <allow netmask="127.0.0.0/8" token="secret"/>
         </method>
+        <method name="post">
+            <allow netmask="127.0.0.0/8" token="secret"/>
+        </method>
     </endpoint>
      */
 
-    // TODO get this from configuration file
-    private static final String FOLDERNAME = "/opt/digiverso/goobi/marcexport/";
+    private String folderName;
+    private List<String> stepNameWhiteList = new ArrayList<>();
+
+    public MarcDeliveryRestPlugin() {
+
+        // read configuration file
+        XMLConfiguration conf = ConfigPlugins.getPluginConfig("intranda_rest_marcdelivery");
+        conf.setExpressionEngine(new XPathExpressionEngine());
+        folderName = conf.getString("/exportFolder");
+        stepNameWhiteList = Arrays.asList(conf.getStringArray("/step"));
+    }
 
     @javax.ws.rs.Path("/listfiles")
     @GET
@@ -61,30 +83,21 @@ public class MarcDeliveryRestPlugin {
     @GET
     @Produces("text/xml")
     public Response getMarcFile(@PathParam("filename") final String filename) {
-        List<String> filenames = getRecordsFromFolder();
-        if (!filenames.contains(filename)) {
-            return Response.status(Status.NOT_FOUND).build();
-        }
-        Path existingFile = getRecord(filename);
+        Path existingFile = checkFilename(filename);
         if (existingFile == null) {
             return Response.status(Status.NOT_FOUND).build();
         }
         return Response.ok(existingFile.toFile()).build();
     }
 
+    // curl -s -X POST -H "Content-Type: application/xml" -H "token:secret" http://localhost:8080/goobi/api/delivery/finish/56986741-e4e5-42b9-bf25-81d23d9cbe06.xml/ID12345
+
     @javax.ws.rs.Path("/finish/{filename}/{recordid}")
-    @PUT
-    @Produces("text/xml")
+    @POST
+    @Produces("application/xml")
     public Response finishProcess(@PathParam("filename") final String filename, @PathParam("recordid") String recordid) {
 
-        // check if file exists
-        List<String> filenames = getRecordsFromFolder();
-        if (!filenames.contains(filename)) {
-            return Response.status(Status.NOT_FOUND).build();
-        }
-
-        // get the actual file
-        Path existingFile = getRecord(filename);
+        Path existingFile = checkFilename(filename);
         if (existingFile == null) {
             return Response.status(Status.NOT_FOUND).build();
         }
@@ -124,7 +137,7 @@ public class MarcDeliveryRestPlugin {
             }
             // update process
             process.writeMetadataFile(fileformat);
-        } catch (UGHException | IOException |  SwapException  e) {
+        } catch (UGHException | IOException | SwapException e) {
             log.error(e);
             return Response.serverError().build();
         }
@@ -139,31 +152,68 @@ public class MarcDeliveryRestPlugin {
         if (StorageProvider.getInstance().list(existingFile.getParent().toString()).isEmpty()) {
             StorageProvider.getInstance().deleteDir(existingFile.getParent());
             Step step = process.getAktuellerSchritt();
-            CloseStepHelper.closeStep(step, null);
+            if (step != null && stepNameWhiteList.contains(step.getTitel())) {
+                CloseStepHelper.closeStep(step, null);
+            }
         }
 
-
         return Response.ok().build();
     }
 
-    @javax.ws.rs.Path("/error/{filename}/")
-    @PUT
-    @Consumes("text/plain")
-    @Produces("text/xml")
-    public Response finishProcess(@PathParam("filename") final String filename) {
-        // find file, remove it
-        // find process, set current step to error
+    // curl -s -X POST -H "Content-Type: application/xml" -H "token:secret" -d'<msg><type>error</type><message>Corrupt filename</message></msg>' http://localhost:8080/goobi/api/delivery/error/56986741-e4e5-42b9-bf25-81d23d9cbe06.xml
 
+    @javax.ws.rs.Path("/error/{filename}")
+    @POST
+    @Consumes("application/xml")
+    @Produces("application/xml")
+    public Response finishProcess(@PathParam("filename") final String filename, Msg msg) {
+        // find file
+        Path existingFile = checkFilename(filename);
+        if (existingFile == null) {
+            return Response.status(Status.NOT_FOUND).build();
+        }
+        // find process
+        String processId = existingFile.getParent().getFileName().toString();
+        Process process = ProcessManager.getProcessById(Integer.parseInt(processId));
+        Step step = process.getAktuellerSchritt();
+        if (step != null && stepNameWhiteList.contains(step.getTitel())) {
+            step.setBearbeitungsstatusEnum(StepStatus.ERROR);
+            try {
+                StepManager.saveStep(step);
+            } catch (DAOException e) {
+                log.error(e);
+            }
+        }
+
+        // write message to process log
+        LogEntry logEntry = new LogEntry();
+        logEntry.setContent(msg.getMessage());
+        logEntry.setProcessId(process.getId());
+        logEntry.setCreationDate(new Date());
+        logEntry.setType(LogType.getByTitle(msg.getType().toLowerCase()));
+        logEntry.setUserName("aDIS");
+        logEntry.persist();
+
+        // delete file, so it doesn't get listed until error is fixed
+        try {
+            StorageProvider.getInstance().deleteFile(existingFile);
+        } catch (IOException e) {
+            log.error(e);
+        }
+        // if folder is empty, all records where imported, delete folder
+        if (StorageProvider.getInstance().list(existingFile.getParent().toString()).isEmpty()) {
+            StorageProvider.getInstance().deleteDir(existingFile.getParent());
+
+        }
 
         return Response.ok().build();
     }
-
 
     private List<String> getRecordsFromFolder() {
         List<String> allFilenames = new ArrayList<>();
         try {
             try (Stream<Path> input =
-                    Files.find(Paths.get(FOLDERNAME), 2, (p, file) -> file.isRegularFile() && p.getFileName().toString().endsWith(".xml"))) {
+                    Files.find(Paths.get(folderName), 2, (p, file) -> file.isRegularFile() && p.getFileName().toString().endsWith(".xml"))) {
                 input.forEach(p -> allFilenames.add(p.getFileName().toString()));
             }
         } catch (IOException e) {
@@ -176,7 +226,7 @@ public class MarcDeliveryRestPlugin {
         try {
             Optional<Path> path = Optional.empty();
             try (Stream<Path> input =
-                    Files.find(Paths.get(FOLDERNAME), 2, (p, file) -> file.isRegularFile() && p.getFileName().toString().equals(filename))) {
+                    Files.find(Paths.get(folderName), 2, (p, file) -> file.isRegularFile() && p.getFileName().toString().equals(filename))) {
                 path = input.findFirst();
             }
 
@@ -187,6 +237,21 @@ public class MarcDeliveryRestPlugin {
             log.error(e);
         }
         return null;
+    }
+
+    private Path checkFilename(final String filename) {
+        // check if file exists
+        List<String> filenames = getRecordsFromFolder();
+        if (!filenames.contains(filename)) {
+            return null;
+        }
+
+        // get the actual file
+        Path existingFile = getRecord(filename);
+        if (existingFile == null) {
+            return null;
+        }
+        return existingFile;
     }
 
 }

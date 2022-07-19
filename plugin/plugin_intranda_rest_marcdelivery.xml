@@ -1,0 +1,6 @@
+<config_plugin>
+    <exportFolder>/opt/digiverso/goobi/marcexport</exportFolder>
+    <step>marc export</step>
+    <step>aDIS Export</step>
+    <step>MARC Delivery</step>
+</config_plugin>
