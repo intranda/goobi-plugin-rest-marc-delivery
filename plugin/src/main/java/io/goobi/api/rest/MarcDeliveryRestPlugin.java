@@ -69,9 +69,11 @@ public class MarcDeliveryRestPlugin {
         stepNameWhiteList = Arrays.asList(conf.getStringArray("/step"));
     }
 
+    // curl -s -H "Content-Type: application/xml" -H "token:secret" http://localhost:8080/goobi/api/delivery/listfiles
+
     @javax.ws.rs.Path("/listfiles")
     @GET
-    @Produces("text/xml")
+    @Produces("application/xml")
     public FileListResponse getListOfFiles() {
         List<String> filenames = getRecordsFromFolder();
         FileListResponse flr = new FileListResponse();
@@ -79,9 +81,12 @@ public class MarcDeliveryRestPlugin {
         return flr;
     }
 
+    // curl -s -H "Content-Type: application/xml" -H "token:secret" http://localhost:8080/goobi/api/delivery/get/56986741-e4e5-42b9-bf25-81d23d9cbe06.xml
+
+
     @javax.ws.rs.Path("/get/{filename}")
     @GET
-    @Produces("text/xml")
+    @Produces("application/xml")
     public Response getMarcFile(@PathParam("filename") final String filename) {
         Path existingFile = checkFilename(filename);
         if (existingFile == null) {
