@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -21,13 +20,13 @@ import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
-import org.goobi.beans.LogEntry;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.LogType;
 
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.helper.CloseStepHelper;
+import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.enums.StepStatus;
 import de.sub.goobi.helper.exceptions.DAOException;
@@ -191,13 +190,7 @@ public class MarcDeliveryRestPlugin {
         }
 
         // write message to process log
-        LogEntry logEntry = new LogEntry();
-        logEntry.setContent(msg.getMessage());
-        logEntry.setProcessId(process.getId());
-        logEntry.setCreationDate(new Date());
-        logEntry.setType(LogType.getByTitle(msg.getType().toLowerCase()));
-        logEntry.setUserName("aDIS");
-        logEntry.persist();
+        Helper.addMessageToProcessJournal(process.getId(), LogType.getByTitle(msg.getType().toLowerCase()), msg.getMessage(), "aDIS");
 
         // delete file, so it doesn't get listed until error is fixed
         try {
