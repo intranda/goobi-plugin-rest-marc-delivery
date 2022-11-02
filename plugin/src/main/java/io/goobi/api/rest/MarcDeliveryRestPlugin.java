@@ -170,7 +170,7 @@ public class MarcDeliveryRestPlugin {
     @POST
     @Consumes("application/xml")
     @Produces("application/xml")
-    public Response finishProcess(@PathParam("filename") final String filename, Msg msg) {
+    public Response errorProcess(@PathParam("filename") final String filename, Msg msg) {
         // find file
         Path existingFile = checkFilename(filename);
         if (existingFile == null) {
