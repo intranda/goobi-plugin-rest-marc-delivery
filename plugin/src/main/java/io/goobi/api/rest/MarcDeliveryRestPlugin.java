@@ -82,7 +82,6 @@ public class MarcDeliveryRestPlugin {
 
     // curl -s -H "Content-Type: application/xml" -H "token:secret" http://localhost:8080/goobi/api/delivery/get/56986741-e4e5-42b9-bf25-81d23d9cbe06.xml
 
-
     @javax.ws.rs.Path("/get/{filename}")
     @GET
     @Produces("application/xml")
@@ -108,6 +107,8 @@ public class MarcDeliveryRestPlugin {
         String processId = existingFile.getParent().getFileName().toString();
         // find process with that id
         Process process = ProcessManager.getProcessById(Integer.parseInt(processId));
+        Step step = process.getAktuellerSchritt();
+
         Prefs prefs = process.getRegelsatz().getPreferences();
 
         MetadataType identifierType = prefs.getMetadataTypeByName("CatalogIDDigital");
@@ -142,6 +143,25 @@ public class MarcDeliveryRestPlugin {
             // update process
             process.writeMetadataFile(fileformat);
         } catch (UGHException | IOException | SwapException e) {
+            //  adis id could not be added, set status to error
+            if (step != null && stepNameWhiteList.contains(step.getTitel())) {
+                step.setBearbeitungsstatusEnum(StepStatus.ERROR);
+                try {
+                    StepManager.saveStep(step);
+                } catch (DAOException e1) {
+                    log.error(e1);
+                }
+            }
+            // create journal entry
+            Helper.addMessageToProcessJournal(process.getId(), LogType.ERROR, e.getMessage(), "aDIS");
+
+            // cleanup
+            try {
+                StorageProvider.getInstance().deleteFile(existingFile);
+            } catch (IOException e1) {
+                log.error(e1);
+            }
+            // cancel
             log.error(e);
             return Response.serverError().build();
         }
@@ -155,7 +175,7 @@ public class MarcDeliveryRestPlugin {
         // if folder is empty, all records where imported, delete folder and close current step
         if (StorageProvider.getInstance().list(existingFile.getParent().toString()).isEmpty()) {
             StorageProvider.getInstance().deleteDir(existingFile.getParent());
-            Step step = process.getAktuellerSchritt();
+
             if (step != null && stepNameWhiteList.contains(step.getTitel())) {
                 CloseStepHelper.closeStep(step, null);
             }
