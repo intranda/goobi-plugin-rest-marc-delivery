@@ -128,22 +128,29 @@ public class MarcDeliveryRestPlugin {
             if (anchor != null) {
                 List<? extends Metadata> ids = anchor.getAllMetadataByType(identifierType);
                 if (ids != null && ids.get(0).getValue().equals(currentId)) {
-                    Metadata md = new Metadata(adisType);
-                    md.setValue(recordid);
-                    anchor.addMetadata(md);
+                    try {
+                        Metadata md = new Metadata(adisType);
+                        md.setValue(recordid);
+                        anchor.addMetadata(md);
+                    } catch (UGHException e) {
+                        // ignore exception, adis id already exists
+                    }
                 }
             }
 
             List<? extends Metadata> ids = logical.getAllMetadataByType(identifierType);
             if (ids != null && ids.get(0).getValue().equals(currentId)) {
-                Metadata md = new Metadata(adisType);
-                md.setValue(recordid);
-                logical.addMetadata(md);
+                try {
+                    Metadata md = new Metadata(adisType);
+                    md.setValue(recordid);
+                    logical.addMetadata(md);
+                } catch (UGHException e) {
+                    // ignore exception, adis id already exists
+                }
             }
             // update process
             process.writeMetadataFile(fileformat);
         } catch (UGHException | IOException | SwapException e) {
-            //  adis id could not be added, set status to error
             if (step != null && stepNameWhiteList.contains(step.getTitel())) {
                 step.setBearbeitungsstatusEnum(StepStatus.ERROR);
                 try {
