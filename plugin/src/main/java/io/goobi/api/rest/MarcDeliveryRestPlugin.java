@@ -111,8 +111,8 @@ public class MarcDeliveryRestPlugin {
 
         Prefs prefs = process.getRegelsatz().getPreferences();
 
-        MetadataType identifierType = prefs.getMetadataTypeByName("CatalogIDDigital");
-        MetadataType adisType = prefs.getMetadataTypeByName("CatalogIDDigital_DS");
+        MetadataType identifierType = prefs.getMetadataTypeByName("CatalogIDDigital_Delivery");
+        MetadataType adisType = prefs.getMetadataTypeByName("CatalogIDDigital");
         String currentId = filename.replace(".xml", "");
         // read metadata
         try {
