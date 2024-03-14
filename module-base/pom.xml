@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.goobi.workflow.plugin</groupId>
-    <artifactId>plugin-rest-marcdelivery</artifactId>
+    <artifactId>plugin-rest-marc-delivery</artifactId>
     <version>24.03-SNAPSHOT</version>
   </parent>
-  <artifactId>plugin-rest-marcdelivery-base</artifactId>
+  <artifactId>plugin-rest-marc-delivery-base</artifactId>
   <packaging>jar</packaging>
 </project>
