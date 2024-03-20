@@ -5,6 +5,6 @@
     <artifactId>plugin-rest-marc-delivery</artifactId>
     <version>24.03-SNAPSHOT</version>
   </parent>
-  <artifactId>plugin-rest-marc-delivery-base</artifactId>
+  <artifactId>plugin-rest-marc-delivery-api</artifactId>
   <packaging>jar</packaging>
 </project>
