@@ -111,8 +111,8 @@ public class MarcDeliveryRestPlugin {
 
         Prefs prefs = process.getRegelsatz().getPreferences();
 
-        MetadataType identifierType = prefs.getMetadataTypeByName("CatalogIDDigital_Delivery");
-        MetadataType adisType = prefs.getMetadataTypeByName("CatalogIDDigital");
+        MetadataType deliveryNumberType = prefs.getMetadataTypeByName("CatalogIDDigital_Delivery");
+        MetadataType adisNumberType = prefs.getMetadataTypeByName("CatalogIDDigital");
         String currentId = filename.replace(".xml", "");
         // read metadata
         try {
@@ -126,26 +126,43 @@ public class MarcDeliveryRestPlugin {
 
             // write adis id to metadata
             if (anchor != null) {
-                List<? extends Metadata> ids = anchor.getAllMetadataByType(identifierType);
+                List<? extends Metadata> ids = anchor.getAllMetadataByType(deliveryNumberType);
                 if (ids != null && ids.get(0).getValue().equals(currentId)) {
-                    try {
-                        Metadata md = new Metadata(adisType);
-                        md.setValue(recordid);
-                        anchor.addMetadata(md);
-                    } catch (UGHException e) {
-                        // ignore exception, adis id already exists
+                    // check if field exists
+                    List<? extends Metadata> identifierList = anchor.getAllMetadataByType(adisNumberType);
+                    if (!identifierList.isEmpty()) {
+                        // if yes, re-use it, overwrite entry
+                        identifierList.get(0).setValue(recordid);
+                    } else {
+                        // if not, create a new one
+                        try {
+                            Metadata md = new Metadata(adisNumberType);
+                            md.setValue(recordid);
+                            anchor.addMetadata(md);
+                        } catch (UGHException e) {
+                            // ignore exception, adis id already exists
+                        }
                     }
                 }
             }
 
-            List<? extends Metadata> ids = logical.getAllMetadataByType(identifierType);
+            List<? extends Metadata> ids = logical.getAllMetadataByType(deliveryNumberType);
             if (ids != null && ids.get(0).getValue().equals(currentId)) {
-                try {
-                    Metadata md = new Metadata(adisType);
-                    md.setValue(recordid);
-                    logical.addMetadata(md);
-                } catch (UGHException e) {
-                    // ignore exception, adis id already exists
+
+                // check if field exists
+                List<? extends Metadata> identifierList = logical.getAllMetadataByType(adisNumberType);
+                if (!identifierList.isEmpty()) {
+                    // if yes, re-use it, overwrite entry
+                    identifierList.get(0).setValue(recordid);
+                } else {
+                    // if not, create a new one
+                    try {
+                        Metadata md = new Metadata(adisNumberType);
+                        md.setValue(recordid);
+                        logical.addMetadata(md);
+                    } catch (UGHException e) {
+                        // ignore exception, adis id already exists
+                    }
                 }
             }
             // update process
