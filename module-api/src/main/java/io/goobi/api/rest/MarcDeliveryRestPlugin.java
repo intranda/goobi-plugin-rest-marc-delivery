@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
@@ -42,7 +42,7 @@ import ugh.dl.Prefs;
 import ugh.exceptions.UGHException;
 
 @Log4j2
-@javax.ws.rs.Path("/delivery")
+@jakarta.ws.rs.Path("/delivery")
 public class MarcDeliveryRestPlugin {
     /*
      * goobi_rest.xml:
@@ -70,7 +70,7 @@ public class MarcDeliveryRestPlugin {
 
     // curl -s -H "Content-Type: application/xml" -H "token:secret" http://localhost:8080/goobi/api/delivery/listfiles
 
-    @javax.ws.rs.Path("/listfiles")
+    @jakarta.ws.rs.Path("/listfiles")
     @GET
     @Produces("application/xml")
     public FileListResponse getListOfFiles() {
@@ -82,7 +82,7 @@ public class MarcDeliveryRestPlugin {
 
     // curl -s -H "Content-Type: application/xml" -H "token:secret" http://localhost:8080/goobi/api/delivery/get/56986741-e4e5-42b9-bf25-81d23d9cbe06.xml
 
-    @javax.ws.rs.Path("/get/{filename}")
+    @jakarta.ws.rs.Path("/get/{filename}")
     @GET
     @Produces("application/xml")
     public Response getMarcFile(@PathParam("filename") final String filename) {
@@ -95,7 +95,7 @@ public class MarcDeliveryRestPlugin {
 
     // curl -s -X POST -H "Content-Type: application/xml" -H "token:secret" http://localhost:8080/goobi/api/delivery/finish/56986741-e4e5-42b9-bf25-81d23d9cbe06.xml/ID12345
 
-    @javax.ws.rs.Path("/finish/{filename}/{recordid}")
+    @jakarta.ws.rs.Path("/finish/{filename}/{recordid}")
     @POST
     @Produces("application/xml")
     public Response finishProcess(@PathParam("filename") final String filename, @PathParam("recordid") String recordid) {
@@ -210,7 +210,7 @@ public class MarcDeliveryRestPlugin {
 
     // curl -s -X POST -H "Content-Type: application/xml" -H "token:secret" -d'<msg><type>error</type><message>Corrupt filename</message></msg>' http://localhost:8080/goobi/api/delivery/error/56986741-e4e5-42b9-bf25-81d23d9cbe06.xml
 
-    @javax.ws.rs.Path("/error/{filename}")
+    @jakarta.ws.rs.Path("/error/{filename}")
     @POST
     @Consumes("application/xml")
     @Produces("application/xml")
