@@ -1,6 +1,6 @@
 package io.goobi.api.rest;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import lombok.Data;
 
