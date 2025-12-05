@@ -1,4 +1,4 @@
-package io.goobi.api.rest;
+package org.goobi.api.rest;
 
 import java.util.List;
 

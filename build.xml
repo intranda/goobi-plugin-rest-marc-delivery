@@ -8,7 +8,7 @@
 		<exec executable="mvn">
 			<arg value="package"/>
 		</exec>
-		<copy file="module-main/target/plugin_intranda_rest_${name}.jar" todir="/opt/digiverso/goobi/plugins/GUI/" overwrite="true"/>
+		<copy file="module-api/target/plugin-rest-marc-delivery-api.jar" todir="/opt/digiverso/goobi/plugins/GUI/" overwrite="true"/>
 	</target>
 
 </project>
