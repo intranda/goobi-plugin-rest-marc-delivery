@@ -1,4 +1,4 @@
-package io.goobi.api.rest;
+package org.goobi.api.rest;
 
 import java.io.IOException;
 import java.nio.file.Files;
